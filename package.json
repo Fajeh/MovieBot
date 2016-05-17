@@ -17,7 +17,8 @@
   },
   "homepage": "https://github.com/Fajeh/MovieBot",
   "dependencies": {
-    "botbuilder": "^0.9.2",
-    "restify": "^4.0.4"
+    "botbuilder": "^0.10.2",
+    "restify": "^4.0.4",
+    "moviedb": "^0.2.3"
   }
 }
