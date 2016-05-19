@@ -1,31 +1,50 @@
 /**
  * Created by torbenindorf on 12.05.16.
  */
-
+/* dependencies*/
 var restify = require('restify');
 var builder = require('botbuilder');
-
 var movieDatabase = require('./movieDatabase.js');
 
+/* creates a Luis Dialog*/
 var model = 'https://api.projectoxford.ai/luis/v1/application?id=85c6e28d-607b-4a71-87e6-c694f038eb6e&subscription-key=a0163ecd7c864fd290eef12ce9269e70';
 var dialog = new builder.LuisDialog(model);
 
-dialog.on('considerGenreActor', builder.DialogAction.send('Consider Genre and Actor'));
-dialog.onDefault(builder.DialogAction.send("I'm sorry I didn't understand. I can only create & delete alarms."));
+/* LUIS adjustments*/
+dialog.setThreshold(0.4); // the default value is 0.1! - this is too damn low!
 
-
+/* available modes*/
+var MODE = {
+    FREE : 1,
+    GUIDED : 2
+}
+/* creates the bot */
 // Create bot and add dialogs
 var bot = new builder.BotConnectorBot({ appId: 'MovieBot', appSecret: 'MovieBotSecret' });
-
-
-bot.use(function (session, next) {
-    if (!session.userData.yourName) {
-        session.userData.yourName = true;
-        session.beginDialog('/yourName');
-    } else {
-        next();
-    }
+bot.add("/",dialog);
+/* creates the dialogs */
+/* on default dialog*/
+dialog.onDefault(builder.DialogAction.send("I am sorry. I don´t know what do you mean. Ask for help if you want more information."));
+/* on begin dialog*/
+dialog.onBegin(builder.DialogAction.send('Hi! I am the awesome Moviebot. If you want to see a movie but aren´t sure which movie. You should simply aks me. I offer two ways of helping, a guided mode and free mode. Its your choice which mode do you want!'))
+/* this is the help dialog*/
+dialog.on('userNeedsHelp', builder.DialogAction.send("This is the help dialog"));
+/* mode dialogs */
+dialog.on('userChoosesGuidedMode',function(session, args, next){
+    builder.DialogAction.send("You choose the guided mode");
+    session.botMode = MODE.FREE; // sets the current mode
+   // session.replaceDialog('/freeMode'); // starts the free mode
 });
+dialog.on('userChoosesFreeMode', function(session, args, next){
+    builder.DialogAction.send("You choose the free mode")
+    session.botMode = MODE.GUIDED; // sets the current mode
+  //  session.replaceDialog('/guidedMode'); // starts the guided mode
+});
+
+
+
+dialog.on('considerGenreActor', builder.DialogAction.send('Consider Genre and Actor'));
+
 
 dialog.on('considerActor', [
     function (session, args, next) {
@@ -42,7 +61,7 @@ dialog.on('considerActor', [
         }
     }
 ]);
-
+/*
 bot.add('/yourName', [
     function (session) {
         builder.Prompts.text(session, "Hello... What's your name?");
@@ -89,7 +108,7 @@ bot.add('/guidedMode', [
 
 bot.add('/freeMode', dialog, [
 ]);
-
+*/
 /*
 bot.add('/', [
     function (session) {
