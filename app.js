@@ -21,24 +21,44 @@ var MODE = {
 /* creates the bot */
 // Create bot and add dialogs
 var bot = new builder.BotConnectorBot({ appId: 'MovieBot', appSecret: 'MovieBotSecret' });
-bot.add("/",dialog);
+bot.add("/",dialog); // was genau macht diese Zeile :D ?
 /* creates the dialogs */
 /* on default dialog*/
 dialog.onDefault(builder.DialogAction.send("I am sorry. I don´t know what do you mean. Ask for help if you want more information."));
 /* on begin dialog*/
-dialog.onBegin(builder.DialogAction.send('Hi! I am the awesome Moviebot. If you want to see a movie but aren´t sure which movie. You should simply aks me. I offer two ways of helping, a guided mode and free mode. Its your choice which mode do you want!'))
+dialog.onBegin(function(session, args, next){
+    session.send('Hi! I am the awesome Moviebot. If you want to see a movie but aren´t sure which movie. You should simply aks me. I offer two ways of helping, a guided mode and free mode. Its your choice which mode do you want!');
+    session.send('Just tell me which mode you want. The free mode or the guided mode?');
+});
 /* this is the help dialog*/
-dialog.on('userNeedsHelp', builder.DialogAction.send("This is the help dialog"));
+dialog.on('userNeedsHelp', function(session, args, next){
+
+    // each mode got its own help statement
+    switch (session.botMode){
+        case MODE.FREE:
+            session.send('This is the help dialog for the free mode');
+            break;
+        case MODE.GUIDED:
+            session.send('This is the help dialog for the guided mode');
+            break;
+        default:
+            /* no mode is active currently*/
+            session.send('This is the help dialog for the default mode');
+            break;
+    }
+});
 /* mode dialogs */
 dialog.on('userChoosesGuidedMode',function(session, args, next){
-    builder.DialogAction.send("You choose the guided mode");
-    session.botMode = MODE.FREE; // sets the current mode
-   // session.replaceDialog('/freeMode'); // starts the free mode
+    session.send("You choose the guided mode.");
+    session.send("I will ask you a few questions and with you answers I will find the right movie for you."); // should be improved
+    session.botMode = MODE.GUIDED; // sets the current mode
+    session.beginDialog('/guidedMode');
 });
 dialog.on('userChoosesFreeMode', function(session, args, next){
-    builder.DialogAction.send("You choose the free mode")
-    session.botMode = MODE.GUIDED; // sets the current mode
-  //  session.replaceDialog('/guidedMode'); // starts the guided mode
+    session.send("You choose the guided mode.");
+    session.send("You can tell me statements about movies like \" show me an action movie with Will Smith\" and ich will show you action movies with Will Smith."); // should ne imporved
+    session.botMode = MODE.FREE; // sets the current mode
+    session.beginDialog('/freeMode');
 });
 
 
