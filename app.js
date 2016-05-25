@@ -5,68 +5,70 @@
 var restify = require('restify');
 var builder = require('botbuilder');
 var movieDatabase = require('./movieDatabase.js');
+var freeModeDialog = require('./freeModeDialog.js');
+var guidedModeDialog = require('./guidedModeDialog.js');
 
 /* creates a Luis Dialog*/
 var model = 'https://api.projectoxford.ai/luis/v1/application?id=85c6e28d-607b-4a71-87e6-c694f038eb6e&subscription-key=a0163ecd7c864fd290eef12ce9269e70';
-var dialog = new builder.LuisDialog(model);
+var rootDialog = new builder.LuisDialog(model);
+
+/* CONFIG VARIABLES (GLOBAL)*/
+ CONFIG = {
+    THRESHOLD : 0.4,
+    NUMBER_OF_RETURN : 3
+}
+/* available modes */
+var MODE = {
+    ROOT : "/",
+    FREE : "/freeMode",
+    GUIDED : "/guidedMode"
+}
 
 /* LUIS adjustments*/
-dialog.setThreshold(0.4); // the default value is 0.1! - this is too damn low!
+rootDialog.setThreshold(CONFIG.THRESHOLD); // the default value is 0.1! - this is too damn low!
 
-/* available modes*/
-var MODE = {
-    FREE : 1,
-    GUIDED : 2
-}
-/* creates the bot */
-// Create bot and add dialogs
-var bot = new builder.BotConnectorBot({ appId: 'MovieBot', appSecret: 'MovieBotSecret' });
-bot.add("/",dialog); // was genau macht diese Zeile :D ?
+
+/* creates the movieBot */
+// Create movieBot with options and add dialogs
+var movieBot = new builder.BotConnectorBot({
+    appId: 'MovieBot',
+    appSecret: 'MovieBotSecret'});
+
+// adds all the dialogs
+movieBot.add(MODE.ROOT, rootDialog);
+movieBot.add(MODE.FREE, new freeModeDialog(builder,movieDatabase));
+movieBot.add(MODE.GUIDED, new guidedModeDialog(builder,movieDatabase));
+
 /* creates the dialogs */
-/* on default dialog*/
-dialog.onDefault(builder.DialogAction.send("I am sorry. I don´t know what do you mean. Ask for help if you want more information."));
-/* on begin dialog*/
-dialog.onBegin(function(session, args, next){
+/* on default rootDialog*/
+rootDialog.onDefault(builder.DialogAction.send("I am sorry. I don´t know what do you mean. Ask for help if you want more information."));
+/* on begin rootDialog*/
+rootDialog.onBegin(function(session, args, next){
     session.send('Hi! I am the awesome Moviebot. If you want to see a movie but aren´t sure which movie. You should simply aks me. I offer two ways of helping, a guided mode and free mode. Its your choice which mode do you want!');
     session.send('Just tell me which mode you want. The free mode or the guided mode?');
 });
-/* this is the help dialog*/
-dialog.on('userNeedsHelp', function(session, args, next){
 
-    // each mode got its own help statement
-    switch (session.botMode){
-        case MODE.FREE:
-            session.send('This is the help dialog for the free mode');
-            break;
-        case MODE.GUIDED:
-            session.send('This is the help dialog for the guided mode');
-            break;
-        default:
-            /* no mode is active currently*/
-            session.send('This is the help dialog for the default mode');
-            break;
-    }
+/* this is the help rootDialog*/
+rootDialog.on('userNeedsHelp', function(session, args, next){
+   session.send('This is the help rootDialog for the default mode');
 });
 /* mode dialogs */
-dialog.on('userChoosesGuidedMode',function(session, args, next){
-    session.send("You choose the guided mode.");
-    session.send("I will ask you a few questions and with you answers I will find the right movie for you."); // should be improved
-    session.botMode = MODE.GUIDED; // sets the current mode
-    session.beginDialog('/guidedMode');
+rootDialog.on('userChoosesGuidedMode',function(session, args, next){
+    /* starts the guided mode dialog*/
+    session.beginDialog(MODE.GUIDED);
 });
-dialog.on('userChoosesFreeMode', function(session, args, next){
-    session.send("You choose the guided mode.");
-    session.send("You can tell me statements about movies like \" show me an action movie with Will Smith\" and ich will show you action movies with Will Smith."); // should ne imporved
-    session.botMode = MODE.FREE; // sets the current mode
-    session.beginDialog('/freeMode');
+rootDialog.on('userChoosesFreeMode', function(session, args, next){
+    /* starts the free mode dialog*/
+    session.beginDialog(MODE.FREE);
 });
 
+/* have to be shifted to the mode dialogs */
+rootDialog.on('considerGenreActor', function(session, args, next){
+    session.send('Consider Genre and Actor');
+});
 
-
-dialog.on('considerGenreActor', builder.DialogAction.send('Consider Genre and Actor'));
-
-
-dialog.on('considerActor', [
+/* have to be shifted to the mode dialogs */
+rootDialog.on('considerActor', [
     function (session, args, next) {
         var firstName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Firstname');
         var lastName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Lastname');
@@ -82,7 +84,7 @@ dialog.on('considerActor', [
     }
 ]);
 /*
-bot.add('/yourName', [
+movieBot.add('/yourName', [
     function (session) {
         builder.Prompts.text(session, "Hello... What's your name?");
     },
@@ -92,7 +94,7 @@ bot.add('/yourName', [
     }
 ]);
 
-bot.add('/selectMode', [
+movieBot.add('/selectMode', [
     function (session) {
         session.send("Hi %s. Nice to meet you.", session.userData.name);
         builder.Prompts.text(session, "Which mode do you want to use?");
@@ -115,7 +117,7 @@ bot.add('/selectMode', [
     }
 ]);
 
-bot.add('/guidedMode', [
+movieBot.add('/guidedMode', [
     function (session) {
         builder.Prompts.text(session, "How can I help you?");
 
@@ -126,11 +128,11 @@ bot.add('/guidedMode', [
     }
 ]);
 
-bot.add('/freeMode', dialog, [
+movieBot.add('/freeMode', rootDialog, [
 ]);
 */
 /*
-bot.add('/', [
+movieBot.add('/', [
     function (session) {
 
     },
@@ -144,7 +146,7 @@ bot.add('/', [
 
 // Setup Restify Server
 var server = restify.createServer();
-server.post('/api/messages', bot.verifyBotFramework(), bot.listen());
+server.post('/api/messages', movieBot.verifyBotFramework(), movieBot.listen());
 server.listen(process.env.port || 3978, function () {
     console.log('%s listening to %s', server.name, server.url);
 });
