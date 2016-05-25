@@ -21,5 +21,6 @@ module.exports = function FreeModeDialog(builder, movieDatabase){
         session.send('This is the free mode help');
     });
 
+    dialogFreeMode.onDefault(builder.DialogAction.send("Default response free mode"));
     return dialogFreeMode;
 }
