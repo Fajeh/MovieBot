@@ -21,6 +21,44 @@ module.exports = function FreeModeDialog(builder, movieDatabase){
         session.send('This is the free mode help');
     });
 
-    dialogFreeMode.onDefault(builder.DialogAction.send("Default response free mode"));
+    dialogFreeMode.on('considerActor', [
+        function (session, args, next) {
+            var firstName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Firstname');
+            var lastName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Lastname');
+            var videoType = builder.EntityRecognizer.findEntity(args.entities, 'VideoType');
+
+            if (!firstName && !lastName && !videoType) {
+                session.send("Sorry I didn't understand your request");
+
+            } else {
+                session.send("Looking for " + videoType.entity + " with " + firstName.entity + " " + lastName.entity);
+                movieDatabase.searchActor(firstName, lastName, videoType, function(response) {
+                    if(response.length > 0) {
+                        session.send("We have found some awesome movies for you: ");
+                        for(var index = 0; index < response.length; ++index) {
+                            var counter = index + 1;
+                            session.send("(" + counter + ") " + response[index]);
+                        }
+                    }
+                    else {
+                        session.send("Sorry :-(. We haven't found any movies with "  + firstName.entity + " " + lastName.entity);
+                    }
+
+                    session.send("Do you have any other questions?");
+
+                });
+            }
+        }
+    ]);
+
+    dialogFreeMode.on('considerGenreActor', function(session, args, next){
+        session.send('considerGenreActor');
+    });
+
+    dialogFreeMode.on('considerReleaseYearActor', function(session, args, next){
+        session.send('considerReleaseYearActor');
+    });
+
+    //dialogFreeMode.onDefault(builder.DialogAction.send("Default response free mode"));
     return dialogFreeMode;
 }

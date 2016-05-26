@@ -68,21 +68,7 @@ rootDialog.on('considerGenreActor', function(session, args, next){
 });
 
 /* have to be shifted to the mode dialogs */
-rootDialog.on('considerActor', [
-    function (session, args, next) {
-        var firstName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Firstname');
-        var lastName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Lastname');
-        var videoType = builder.EntityRecognizer.findEntity(args.entities, 'VideoType');
 
-        if (!firstName && !lastName && !videoType) {
-            session.send("Sorry I didn't understand your request");
-
-        } else {
-            session.send("Looking for " + videoType.entity + " with " + firstName.entity + " " + lastName.entity);
-            movieDatabase.searchActor(firstName, lastName, videoType);
-        }
-    }
-]);
 /*
 movieBot.add('/yourName', [
     function (session) {
