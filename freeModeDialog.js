@@ -31,33 +31,62 @@ module.exports = function FreeModeDialog(builder, movieDatabase){
                 session.send("Sorry I didn't understand your request");
 
             } else {
-                session.send("Looking for " + videoType.entity + " with " + firstName.entity + " " + lastName.entity);
-                movieDatabase.searchActor(firstName, lastName, videoType, function(response) {
-                    if(response.length > 0) {
-                        session.send("We have found some awesome movies for you: ");
-                        for(var index = 0; index < response.length; ++index) {
-                            var counter = index + 1;
-                            session.send("(" + counter + ") " + response[index]);
-                        }
-                    }
-                    else {
-                        session.send("Sorry :-(. We haven't found any movies with "  + firstName.entity + " " + lastName.entity);
-                    }
-
-                    session.send("Do you have any other questions?");
-
-                });
+                searchForActor(session, firstName, lastName, videoType);
             }
         }
     ]);
 
-    dialogFreeMode.on('considerGenreActor', function(session, args, next){
-        session.send('considerGenreActor');
+    dialogFreeMode.on('considerGenreActor', function(session, args, next) {
+        var firstName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Firstname');
+        var lastName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Lastname');
+        var videoType = builder.EntityRecognizer.findEntity(args.entities, 'VideoType');
+        var genre = builder.EntityRecognizer.findEntity(args.entities, 'Genre');
+
+        if (!firstName && !lastName && !videoType) {
+            session.send("Sorry I didn't understand your request");
+        }
+
+        if(!genre && (firstName && lastName && videoType)) //No genre found -> Only search for the actor :)
+            searchForActor(session, firstName, lastName, videoType);
+        else
+        {
+            session.send("")
+        }
     });
 
     dialogFreeMode.on('considerReleaseYearActor', function(session, args, next){
         session.send('considerReleaseYearActor');
     });
+
+    dialogFreeMode.on('showCurrentCinemaMovies', function(session, args, next){
+        session.send('Loading the current movies in cinema. Please wait a second.');
+        movieDatabase.moviesInTheatre(function(response){
+            session.send('Here is your result:');
+            for(var index = 0; index < response.length; ++index) {
+                var counter = index + 1;
+                session.send("(" + counter + ") " + response[index].title + ' (Popularity: '+ response[index].popularity + ')');
+            }
+        });
+    });
+
+    //Call the MovieDB and search for the 3 best movies of the actor
+    function searchForActor(session, firstName, lastName, videoType) {
+        session.send("Looking for " + videoType.entity + " with " + firstName.entity + " " + lastName.entity);
+        movieDatabase.searchActor(firstName, lastName, videoType, function(response) {
+            if(response.length > 0) { //Output result
+                session.send("We have found some awesome movies or series for you: ");
+                for(var index = 0; index < response.length; ++index) {
+                    var counter = index + 1;
+                    session.send("(" + counter + ") " + response[index].title + ' (Popularity: '+ response[index].popularity + ')');
+                }
+            }
+            else {
+                session.send("Sorry :-(. We haven't found any movies with "  + firstName.entity + " " + lastName.entity);
+            }
+
+            session.send("Do you have any other questions?");
+        });
+    }
 
     //dialogFreeMode.onDefault(builder.DialogAction.send("Default response free mode"));
     return dialogFreeMode;
