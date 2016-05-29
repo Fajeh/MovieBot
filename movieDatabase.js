@@ -40,7 +40,10 @@ module.exports = new function(){
             result = 10752;
         else if(genreName == 'western')
             result = 37;
-
+        else {
+            result = -1;
+            console.log(genreName);
+        }
         return result;
     }
 
