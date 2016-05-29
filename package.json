@@ -19,6 +19,8 @@
   "dependencies": {
     "botbuilder": "^0.10.2",
     "restify": "^4.0.4",
-    "moviedb": "^0.2.3"
+    "moviedb": "^0.2.3",
+    "requestify": "latest",
+    "dateformat": "latest"
   }
 }
