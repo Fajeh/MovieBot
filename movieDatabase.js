@@ -76,7 +76,8 @@ module.exports = new function(){
 
     return{
 
-        searchActor: function (builder, args, callback) {
+        searchActor: function (builder, args, callback)
+        {
             var firstName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Firstname');
             var lastName = builder.EntityRecognizer.findEntity(args.entities, 'Actor::Lastname');
             var videoType = builder.EntityRecognizer.findEntity(args.entities, 'VideoType');
@@ -89,7 +90,6 @@ module.exports = new function(){
                 if(genre)
                     genreID = _movieGenreToID(genre);
 
-
                 if(videoType == 'movies' || videoType == 'movie')
                     type = 'movie';
                 else if(videoType == 'series' || videoType == 'serie')
@@ -97,32 +97,30 @@ module.exports = new function(){
                 else
                     type = 'movie';
 
-                if(res.results.length > 0 && genreID > 0) {
-
+                if(res.results.length > 0 && genreID > 0)
+                {
                     var requestify = require('requestify');
                     var getURL = API_URL + '/discover/' + type + '?with_genres=' + genreID + '&with_cast=' + res.results[0].id + '&certification_country=ger&sort_by=popularity.desc' + '&api_key=' + API_KEY;
 
-
-                     if(genreID != -1)
-                     getURL = getURL + '&with_genres=' + genreID;
+                    if(genreID != -1)
+                        getURL = getURL + '&with_genres=' + genreID;
 
                      requestify.get(getURL).then(function(response) {
-                     // Get the response body
-                     var body = response.getBody();
-                     var movieResult = body.results;
+                        // Get the response body
+                        var body = response.getBody();
+                        var movieResult = body.results;
 
-                     if(movieResult.length > 0) {
-                     var result = [];
+                        if(movieResult.length > 0) {
+                            var result = [];
 
-                     for(var index = 0; index < movieResult.length; ++index) {
-                     result.push(movieResult[index]);
-                     }
+                            for(var index = 0; index < movieResult.length; ++index) {
+                                result.push(movieResult[index]);
+                            }
 
-                     return callback(result);
-                     }
+                        return callback(result);
+                        }
                      });
                 } else {
-                    console.log('Hier');
                     _filterActor(res.results, callback);
                 }
             });
@@ -180,8 +178,6 @@ module.exports = new function(){
             if(genreID != -1)
                 getURL = getURL + '&with_genres=' + genreID;
 
-            console.log(getURL);
-
             requestify.get(getURL).then(function(response) {
                 // Get the response body
                 var body = response.getBody();
@@ -198,5 +194,4 @@ module.exports = new function(){
             });
         }
     }
-
 }
